@@ -1,0 +1,74 @@
+http:
+  middlewares:
+    test-things-auth:
+      basicauth:
+        users: 
+          - "{{ env "TRAEFIK_DASHBOARD_USER" }}:{{ env "TRAEFIK_DASHBOARD_PASS" }}"
+        removeheader: true
+
+  services:
+    prometheus:
+      loadBalancer:
+        servers: 
+          - url: "http://prometheus:{{ env "PROMETHEUS_PORT" }}"
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:{{ env "GRAFANA_PORT" }}"
+    cadvisor:
+      loadBalancer:
+        servers:
+          - url: "http://cadvisor:{{ env "CADVISOR_PORT" }}"
+    
+  routers:
+    dashboard:
+      rule: "Host(`dashboard.{{ env "HOSTNAME" }}`)"
+      service: "api@internal"
+      middlewares:
+        - test-things-auth
+    prometheus:
+      rule: "Host(`prometheus.{{ env "HOSTNAME" }}`)"
+      service: "prometheus"
+      middlewares: 
+        - test-things-auth
+    grafana:
+      rule: "Host(`grafana.{{ env "HOSTNAME" }}`)"
+      service: "grafana"
+      middlewares:
+        - test-things-auth
+    cadvisor:
+      rule: "Host(`cadvisor.{{ env "HOSTNAME" }}`)"
+      service: "cadvisor"
+      middlewares:
+        - test-things-auth
+    http-express-calculator-simple:
+      entryPoints:
+        - "web"
+      rule: "PathPrefix(`/http-express-calculator-simple`)"
+      service: "http-express-calculator-simple"
+    http-express-calculator-content-negotiation:
+      entryPoints:
+          - "web"
+      rule: "PathPrefix(`/http-express-calculator-content-negotiation`)"
+      service: "http-express-calculator-content-negotiation"
+    http-flask-calculator:
+      entryPoints:
+        - "web"
+      rule: "PathPrefix(`/http-flask-calculator`)"
+      service: "http-flask-calculator"
+    
+tcp:
+  routers:
+    modbus-elevator:
+      entryPoints:
+        - "modbus-elevator"
+      rule: "HostSNI(`*`)"
+
+udp:
+  routers:
+    coap-calculator-simple:
+      entryPoints:
+        - "coap-calculator-simple"
+    coap-calculator-content-negotiation:
+      entryPoints:
+        - "coap-calculator-content-negotiation"
